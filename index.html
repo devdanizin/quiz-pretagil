@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f47721" />
+    <meta
+      name="description"
+      content="Um quiz interativo sobre a trajetória de Preta Gil."
+    />
+    <title>Quiz Preta Gil | Feira Cultural</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar">
+        <a class="wordmark" href="#inicio" aria-label="Quiz Preta Gil, início">
+          <span class="wordmark-icon" aria-hidden="true">♪</span>
+          <span
+            >FEIRA CULTURAL <span class="wordmark-divider">/</span> 7º ANO</span
+          >
+        </a>
+        <button
+          class="sound-toggle"
+          id="sound-toggle"
+          type="button"
+          aria-pressed="true"
+        >
+          <span class="sound-icon" aria-hidden="true">♫</span>
+          <span id="sound-label">Som ligado</span>
+        </button>
+      </header>
+
+      <main id="inicio">
+        <section class="intro" aria-labelledby="page-title">
+          <p class="eyebrow">
+            <span class="eyebrow-dot"></span> MÚSICA · CULTURA · HISTÓRIA
+          </p>
+          <h1 id="page-title">Você conhece a<br /><span>Preta Gil?</span></h1>
+          <p class="intro-copy">
+            Responda às perguntas, descubra sua pontuação e celebre uma
+            trajetória cheia de música.
+          </p>
+          <div class="intro-stats" aria-label="Informações do quiz">
+            <span><strong id="question-count">12</strong> perguntas</span>
+            <span class="stat-separator" aria-hidden="true"></span>
+            <span><strong id="participant-count">0</strong> participações</span>
+          </div>
+        </section>
+
+        <section class="quiz-panel" aria-live="polite">
+          <div class="panel-topline">
+            <span class="panel-kicker" id="panel-kicker">VAMOS COMEÇAR?</span>
+            <span class="panel-mark" aria-hidden="true">PG<span>.</span></span>
+          </div>
+
+          <div class="screen" id="welcome-screen">
+            <h2>Entre na roda!</h2>
+            <p class="screen-copy">Como podemos chamar você?</p>
+            <form id="start-form" class="start-form">
+              <label class="sr-only" for="player-name">Seu nome</label>
+              <input
+                id="player-name"
+                name="name"
+                type="text"
+                placeholder="Digite seu nome"
+                maxlength="32"
+                autocomplete="given-name"
+                required
+              />
+              <button class="primary-button" type="submit">
+                Começar quiz <span aria-hidden="true">→</span>
+              </button>
+            </form>
+            <p class="privacy-note">
+              Suas respostas ficam salvas neste dispositivo.
+            </p>
+          </div>
+
+          <div class="screen" id="question-screen" hidden>
+            <div class="question-meta">
+              <span id="player-greeting">BORA, NOME!</span>
+              <span id="question-position">01 / 12</span>
+            </div>
+            <div
+              class="progress-track"
+              role="progressbar"
+              aria-label="Progresso do quiz"
+              aria-valuemin="0"
+              aria-valuemax="12"
+              aria-valuenow="0"
+            >
+              <span id="progress-fill"></span>
+            </div>
+            <h2 class="question-title" id="question-title" tabindex="-1"></h2>
+            <div
+              class="answers"
+              id="answers"
+              role="group"
+              aria-label="Escolha uma resposta"
+            ></div>
+            <div class="question-footer">
+              <p class="feedback" id="feedback" aria-live="polite"></p>
+              <button
+                class="primary-button"
+                id="submit-answer"
+                type="button"
+                disabled
+              >
+                Confirmar resposta <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="screen result-screen" id="result-screen" hidden>
+            <div class="result-stamp" aria-hidden="true">♪</div>
+            <p class="result-overline">
+              FIM DE RODA, <span id="result-name"></span>!
+            </p>
+            <h2 id="result-score">0 <span>/ 12</span></h2>
+            <p class="result-message" id="result-message"></p>
+            <div class="result-actions">
+              <button class="primary-button" id="restart-button" type="button">
+                Jogar novamente <span aria-hidden="true">↻</span>
+              </button>
+              <button class="secondary-button" id="export-button" type="button">
+                <span aria-hidden="true">↓</span> Baixar resultados JSON
+              </button>
+            </div>
+            <p class="privacy-note" id="storage-note">
+              Resultados salvos neste dispositivo.
+            </p>
+          </div>
+
+          <div class="panel-decoration" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </section>
+      </main>
+
+      <footer class="page-footer">
+        <span>UM QUIZ DA FEIRA CULTURAL</span>
+        <span>FEITO COM MÚSICA <span aria-hidden="true">♪</span></span>
+      </footer>
+    </div>
+  </body>
+</html>
