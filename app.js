@@ -1,4 +1,3 @@
-const DATA_KEY = 'feira-cultural-preta-gil-v1';
 const SOUND_KEY = 'feira-cultural-som-v1';
 const OPTION_LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -22,8 +21,6 @@ const elements = {
   resultScore: document.querySelector('#result-score'),
   resultMessage: document.querySelector('#result-message'),
   restart: document.querySelector('#restart-button'),
-  export: document.querySelector('#export-button'),
-  storageNote: document.querySelector('#storage-note'),
   soundToggle: document.querySelector('#sound-toggle'),
   soundLabel: document.querySelector('#sound-label'),
   panelKicker: document.querySelector('#panel-kicker'),
@@ -33,55 +30,10 @@ let questions = [];
 let currentIndex = 0;
 let selectedIndex = null;
 let answerSubmitted = false;
-let currentSession = null;
+let score = 0;
+let playerName = '';
 let audioContext = null;
-let storageAvailable = true;
 let soundEnabled = localStorage.getItem(SOUND_KEY) !== 'off';
-
-function readDatabase() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(DATA_KEY) || 'null');
-    return stored && Array.isArray(stored.sessions)
-      ? stored
-      : { version: 1, sessions: [] };
-  } catch {
-    return { version: 1, sessions: [] };
-  }
-}
-
-function saveSession() {
-  if (!currentSession) return;
-  try {
-    const database = readDatabase();
-    const sessionIndex = database.sessions.findIndex(
-      (item) => item.id === currentSession.id,
-    );
-    if (sessionIndex === -1) database.sessions.push(currentSession);
-    else database.sessions[sessionIndex] = currentSession;
-    localStorage.setItem(DATA_KEY, JSON.stringify(database));
-    storageAvailable = true;
-  } catch {
-    storageAvailable = false;
-  }
-  updateParticipantCount();
-}
-
-function recordEvent(type, details = {}) {
-  if (!currentSession) return;
-  currentSession.events.push({
-    type,
-    at: new Date().toISOString(),
-    ...details,
-  });
-  saveSession();
-}
-
-function updateParticipantCount() {
-  const completed = readDatabase().sessions.filter(
-    (session) => session.completedAt,
-  ).length;
-  elements.participantCount.textContent = String(completed);
-}
 
 function setScreen(screen) {
   elements.welcome.hidden = screen !== 'welcome';
@@ -157,12 +109,15 @@ function renderQuestion() {
     button.className = 'answer-option';
     button.type = 'button';
     button.setAttribute('aria-pressed', 'false');
+
     const letter = document.createElement('span');
     letter.className = 'answer-letter';
     letter.setAttribute('aria-hidden', 'true');
     letter.textContent = OPTION_LETTERS[optionIndex];
+
     const label = document.createElement('span');
     label.textContent = option;
+
     button.append(letter, label);
     button.addEventListener('click', () => selectAnswer(optionIndex));
     elements.answers.append(button);
@@ -170,34 +125,22 @@ function renderQuestion() {
 }
 
 function selectAnswer(optionIndex) {
+  if (answerSubmitted) return;
   selectedIndex = optionIndex;
   [...elements.answers.children].forEach((button, index) => {
     button.setAttribute('aria-pressed', String(index === optionIndex));
   });
   elements.submit.disabled = false;
-  recordEvent('answer_option_selected', {
-    questionId: questions[currentIndex].id,
-    optionIndex,
-  });
 }
 
 function submitAnswer() {
   if (selectedIndex === null || answerSubmitted) return;
+
   answerSubmitted = true;
   const question = questions[currentIndex];
   const correct = selectedIndex === question.answerIndex;
-  const answeredAt = new Date().toISOString();
-  const answer = {
-    questionId: question.id,
-    question: question.question,
-    selectedIndex,
-    selectedOption: question.options[selectedIndex],
-    correctIndex: question.answerIndex,
-    correct,
-    answeredAt,
-  };
-  currentSession.answers.push(answer);
-  if (correct) currentSession.score += 1;
+
+  if (correct) score += 1;
 
   [...elements.answers.children].forEach((button, index) => {
     button.disabled = true;
@@ -208,78 +151,60 @@ function submitAnswer() {
   elements.feedback.textContent = correct
     ? 'Isso aí! Resposta certa!'
     : `Quase! A resposta certa é ${OPTION_LETTERS[question.answerIndex]}.`;
-  elements.feedback.classList.add(correct ? 'correct' : 'wrong');
+  elements.feedback.className = `feedback ${correct ? 'correct' : 'wrong'}`;
+
+  elements.submit.disabled = false;
   elements.submit.innerHTML =
     currentIndex === questions.length - 1
       ? 'Ver resultado <span aria-hidden="true">→</span>'
       : 'Próxima pergunta <span aria-hidden="true">→</span>';
-  recordEvent('answer_submitted', {
-    questionId: question.id,
-    optionIndex: selectedIndex,
-    correct,
-  });
+
   playSound(correct ? 'correct' : 'wrong');
 }
 
-function advanceQuestion() {
-  elements.submit.onclick = null;
+function finishQuiz() {
+  const ratio = score / questions.length;
+  const message =
+    ratio === 1
+      ? 'Você arrasou! Acertou todas as perguntas e mostrou que conhece a história e a música da Preta Gil com muita atenção.'
+      : ratio >= 0.7
+        ? 'Muito bem! Você foi muito bom no quiz e está no caminho de conhecer ainda mais essa trajetória incrível.'
+        : ratio >= 0.4
+          ? 'Parabéns por participar! Você acertou algumas perguntas, continue assim.'
+          : 'Continue explorando!';
+
+  const callToAction =
+    'Agora é a hora de visitar a barraca do 7º ano e descobrir mais sobre essa história na Feira Cultural!';
+
+  if (elements.resultName) {
+    elements.resultName.textContent = playerName.toLocaleUpperCase('pt-BR');
+  }
+  if (elements.resultScore) {
+    elements.resultScore.innerHTML = `${score} <span>/ ${questions.length}</span>`;
+  }
+  if (elements.resultMessage) {
+    elements.resultMessage.textContent = `${message} ${callToAction}`;
+  }
+  setScreen('result');
+  playSound('finish');
+}
+
+function handleSubmitClick() {
+  if (!questions.length) return;
+
+  if (!answerSubmitted) {
+    submitAnswer();
+    return;
+  }
+
   if (currentIndex < questions.length - 1) {
     currentIndex += 1;
     renderQuestion();
     elements.title.focus();
     return;
   }
+
   finishQuiz();
-}
-
-function finishQuiz() {
-  currentSession.completedAt = new Date().toISOString();
-  currentSession.durationMs = Date.now() - currentSession.startedAtMs;
-  recordEvent('quiz_completed', {
-    score: currentSession.score,
-    total: questions.length,
-  });
-  const score = currentSession.score;
-  const ratio = score / questions.length;
-  const message =
-    ratio === 1
-      ? 'Você acertou tudo. Que memória musical!'
-      : ratio >= 0.7
-        ? 'Mandou muito bem. Você conhece essa história!'
-        : ratio >= 0.4
-          ? 'Boa participação! Sempre dá para descobrir mais.'
-          : 'Valeu por participar. Agora você conhece um pouco mais!';
-  elements.resultName.textContent =
-    currentSession.name.toLocaleUpperCase('pt-BR');
-  elements.resultScore.innerHTML = `${score} <span>/ ${questions.length}</span>`;
-  elements.resultMessage.textContent = message;
-  elements.storageNote.textContent = storageAvailable
-    ? 'Resultados salvos neste dispositivo.'
-    : 'Não foi possível salvar neste dispositivo. Baixe o JSON para guardar este resultado.';
-  setScreen('result');
-  playSound('finish');
-}
-
-function downloadResults() {
-  const database = readDatabase();
-  const payload = {
-    ...database,
-    exportedAt: new Date().toISOString(),
-    sessions:
-      currentSession &&
-      !database.sessions.some((item) => item.id === currentSession.id)
-        ? [...database.sessions, currentSession]
-        : database.sessions,
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {
-    type: 'application/json',
-  });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `resultados-quiz-preta-gil-${new Date().toISOString().slice(0, 10)}.json`;
-  link.click();
-  URL.revokeObjectURL(url);
 }
 
 elements.form.addEventListener('submit', (event) => {
@@ -289,39 +214,30 @@ elements.form.addEventListener('submit', (event) => {
     elements.name.focus();
     return;
   }
+
+  playerName = name;
+  score = 0;
   currentIndex = 0;
-  currentSession = {
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    name,
-    startedAt: new Date().toISOString(),
-    startedAtMs: Date.now(),
-    completedAt: null,
-    durationMs: null,
-    score: 0,
-    total: questions.length,
-    answers: [],
-    events: [],
-  };
-  recordEvent('quiz_started');
+  selectedIndex = null;
+  answerSubmitted = false;
+
   elements.greeting.textContent = `VAMOS, ${name.toLocaleUpperCase('pt-BR')}!`;
   setScreen('question');
   renderQuestion();
   elements.title.focus();
 });
 
-elements.submit.addEventListener('click', () => {
-  if (answerSubmitted) advanceQuestion();
-  else submitAnswer();
-});
+elements.submit.addEventListener('click', handleSubmitClick);
 elements.restart.addEventListener('click', () => {
-  currentSession = null;
+  playerName = '';
+  score = 0;
+  currentIndex = 0;
+  selectedIndex = null;
+  answerSubmitted = false;
   elements.name.value = '';
   setScreen('welcome');
   elements.name.focus();
 });
-elements.export.addEventListener('click', downloadResults);
 elements.soundToggle.addEventListener('click', () => {
   soundEnabled = !soundEnabled;
   elements.soundToggle.setAttribute('aria-pressed', String(soundEnabled));
@@ -337,7 +253,7 @@ async function initialize() {
   elements.soundLabel.textContent = soundEnabled
     ? 'Som ligado'
     : 'Som desligado';
-  updateParticipantCount();
+  elements.participantCount.textContent = '0';
   try {
     const response = await fetch('./questions.json');
     if (!response.ok)

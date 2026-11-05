@@ -200,25 +200,16 @@ h1 span {
   animation: arrive 650ms 90ms ease both;
 }
 .panel-topline {
-  position: relative;
-  z-index: 1;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #f0e7de;
+  display: none;
 }
 .panel-kicker {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.3px;
+  display: none;
 }
 .panel-mark {
-  color: var(--ink);
-  font-family: 'Outfit', sans-serif;
-  font-size: 19px;
-  font-weight: 800;
+  display: none;
 }
 .panel-mark span {
-  color: var(--orange);
+  display: none;
 }
 .screen {
   position: relative;
